@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Melbourne Itinerary</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #1a1a1a; color: #e0e0e0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; padding: 1rem; }
+  .day-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 1.5rem; }
+  .tab { padding: 6px 14px; border-radius: 20px; border: 0.5px solid #444; font-size: 13px; cursor: pointer; background: #2a2a2a; color: #aaa; transition: all 0.15s; }
+  .tab.active { background: #1D9E75; color: #fff; border-color: #1D9E75; font-weight: 500; }
+  .tab:hover:not(.active) { background: #333; color: #ddd; }
+  .day-panel { display: none; }
+  .day-panel.active { display: block; }
+  .day-header { margin-bottom: 1rem; }
+  .day-header h2 { font-size: 18px; font-weight: 500; color: #f0f0f0; }
+  .day-header p { font-size: 13px; color: #999; margin-top: 3px; }
+  .weather-bar { display: flex; align-items: center; gap: 10px; background: #242424; border: 0.5px solid #383838; border-radius: 10px; padding: 9px 14px; margin-bottom: 1.25rem; font-size: 12px; color: #aaa; }
+  .weather-icon { font-size: 20px; }
+  .weather-temps { font-size: 13px; color: #f0f0f0; font-weight: 500; }
+  .weather-rain { margin-left: auto; font-size: 11px; padding: 2px 8px; border-radius: 8px; }
+  .rain-dry   { background: #0a2418; color: #4ecfa0; }
+  .rain-light { background: #0a1830; color: #6ab0f5; }
+  .rain-mod   { background: #2a1a04; color: #e8a84e; }
+  .crowd-pill { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; padding: 2px 9px; border-radius: 10px; margin-left: 6px; vertical-align: middle; }
+  .crowd-low  { background: #1a3310; color: #7ec84a; }
+  .crowd-mid  { background: #332206; color: #f0a94e; }
+  .crowd-high { background: #330f0a; color: #f07060; }
+  .timeline { display: flex; flex-direction: column; }
+  .event { display: flex; gap: 14px; }
+  .event:not(:last-child) .line { flex: 1; width: 2px; background: #333; margin: 4px auto 0; }
+  .time-col { width: 58px; flex-shrink: 0; text-align: right; padding-top: 2px; }
+  .time-label { font-size: 11px; color: #666; white-space: nowrap; }
+  .dot-col { width: 18px; flex-shrink: 0; display: flex; flex-direction: column; align-items: center; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; margin-top: 4px; }
+  .dot.food   { background: #D85A30; }
+  .dot.see    { background: #378ADD; }
+  .dot.shop   { background: #7F77DD; }
+  .dot.tour   { background: #1D9E75; }
+  .dot.market { background: #BA7517; }
+  .dot.cafe   { background: #E24B4A; }
+  .dot.flight { background: #888780; }
+  .dot.aqua   { background: #185FA5; }
+  .content-col { flex: 1; padding-bottom: 20px; }
+  .event-card { background: #242424; border: 0.5px solid #383838; border-radius: 10px; padding: 12px 14px; }
+  .event-name { font-size: 14px; font-weight: 500; color: #f0f0f0; }
+  .event-sub  { font-size: 12px; color: #999; margin-top: 3px; line-height: 1.5; }
+  .tag { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 10px; margin-top: 6px; margin-right: 4px; }
+  .tag.food   { background: #2e1208; color: #f0886a; }
+  .tag.see    { background: #0a1e38; color: #6ab0f5; }
+  .tag.shop   { background: #17143a; color: #b0abf5; }
+  .tag.tour   { background: #0a2418; color: #4ecfa0; }
+  .tag.market { background: #2e1c05; color: #e8a84e; }
+  .tag.cafe   { background: #2e0e0e; color: #f08080; }
+  .tag.flight { background: #1e1e1a; color: #b0aea8; }
+  .tag.aqua   { background: #091830; color: #5090d8; }
+  .legend { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 1rem; }
+  .leg-item { display: flex; align-items: center; gap: 5px; font-size: 12px; color: #999; }
+  .leg-dot { width: 8px; height: 8px; border-radius: 50%; }
+  .crowd-legend { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 1.5rem; }
+  .tip-box   { background: #1e2e24; border-radius: 8px; padding: 10px 14px; margin-top: 8px; font-size: 12px; color: #aaa; border-left: 3px solid #1D9E75; }
+  .tip-box a { color: #4ecfa0; }
+  .alert-box { background: #2a1a04; border-radius: 8px; padding: 10px 14px; margin-top: 8px; font-size: 12px; color: #e8a84e; border-left: 3px solid #c87d18; }
+  .new-badge     { display: inline-block; font-size: 10px; padding: 2px 7px; border-radius: 8px; background: #0a2418; color: #4ecfa0; margin-left: 6px; vertical-align: middle; font-weight: 500; }
+  .changed-badge { display: inline-block; font-size: 10px; padding: 2px 7px; border-radius: 8px; background: #17143a; color: #b0abf5; margin-left: 6px; vertical-align: middle; font-weight: 500; }
+  .price-badge   { display: inline-block; font-size: 10px; padding: 2px 7px; border-radius: 8px; background: #2e2304; color: #f0c84e; margin-left: 6px; vertical-align: middle; font-weight: 500; }
+</style>
+</head>
+<body>
+  <div class="legend">
+    <div class="leg-item"><div class="leg-dot" style="background:#E24B4A"></div>Cafe</div>
+    <div class="leg-item"><div class="leg-dot" style="background:#D85A30"></div>Food</div>
+    <div class="leg-item"><div class="leg-dot" style="background:#378ADD"></div>Sightseeing</div>
+    <div class="leg-item"><div class="leg-dot" style="background:#185FA5"></div>Aquarium/Zoo</div>
+    <div class="leg-item"><div class="leg-dot" style="background:#7F77DD"></div>Shopping</div>
+    <div class="leg-item"><div class="leg-dot" style="background:#1D9E75"></div>Tour/Activity</div>
+    <div class="leg-item"><div class="leg-dot" style="background:#BA7517"></div>Market</div>
+    <div class="leg-item"><div class="leg-dot" style="background:#888780"></div>Flight</div>
+  </div>
+  <div class="crowd-legend">
+    <span class="crowd-pill crowd-low">🟢 Quiet</span>
+    <span class="crowd-pill crowd-mid">🟡 Moderate</span>
+    <span class="crowd-pill crowd-high">🔴 Busy</span>
+    <span style="font-size:11px;color:#555;align-self:center;">— expected crowd level</span>
+  </div>
+  <div class="day-tabs">
+    <div class="tab active" onclick="show(0)">Wed 27 May</div>
+    <div class="tab" onclick="show(1)">Thu 28 May</div>
+    <div class="tab" onclick="show(2)">Fri 29 May</div>
+    <div class="tab" onclick="show(3)">Sat 30 May</div>
+    <div class="tab" onclick="show(4)">Sun 31 May</div>
+    <div class="tab" onclick="show(5)">Mon 1 Jun</div>
+    <div class="tab" onclick="show(6)">Tue 2 Jun</div>
+  </div>
+
+  <!-- DAY 1 -->
+  <div class="day-panel active" id="d0">
+    <div class="day-header"><h2>Wed 27 May — Arrival</h2><p>You land at 9:35 PM — tonight is just about getting in safely</p></div>
+    <div class="weather-bar"><span class="weather-icon">☀️</span><span class="weather-temps">13–15°C</span><span class="weather-desc">Clear &amp; dry</span><span class="weather-rain rain-dry">No rain</span></div>
+    <div class="timeline">
+      <div class="event">
+        <div class="time-col"><span class="time-label">9:35 PM</span></div>
+        <div class="dot-col"><div class="dot flight"></div><div class="line"></div></div>
+        <div class="content-col"><div class="event-card"><div class="event-name">Land at Melbourne Airport (Tullamarine)</div><div class="event-sub">Allow ~45–60 min for baggage and clearing the terminal</div><span class="tag flight">arrival</span><div class="tip-box">💡 Take the SkyBus — runs 24/7 to Southern Cross Station CBD (~30 min, ~$22pp). Far cheaper than Uber at this hour.</div></div></div>
+      </div>
+      <div class="event">
+        <div class="time-col"><span class="time-label">~11 PM</span></div>
+        <div class="dot-col"><div class="dot see"></div></div>
+        <div class="content-col"><div class="event-card"><div class="event-name">Check in &amp; rest up</div><div class="event-sub">CBD hotels have 24hr reception. Big day tomorrow — get a good night's sleep!</div><span class="tag see">check-in</span></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DAY 2 -->
+  <div class="day-panel" id="d1">
+    <div class="day-header"><h2>Thu 28 May — Southbank + NGV + MUJI + Laneways</h2><p>Relaxed riverside morning, then a quiet afternoon of shopping and laneways in the CBD</p></div>
+    <div class="weather-bar"><span class="weather-icon">☀️</span><span class="weather-temps">14–16°C</span><span class="weather-desc">Dry &amp; clear — best outdoor day of the trip</span><span class="weather-rain rain-dry">No rain</span></div>
+    <div class="timeline">
+      <div class="event">
+        <div class="time-col"><span class="time-label">Morning</span></div>
+        <div class="dot-col"><div class="dot see"></div><div class="line"></div></div>
+        <div class="content-col"><div class="event-card"><div class="event-name">Get your Myki cards</div><div class="event-sub">Pick up at 7-Eleven, Southern Cross Station or any train station. Top up ~$30 each. Free tram zone covers most of the CBD.</div><span class="tag see">admin</span></div></div>
+      </div>
+      <div class="event">
+        <div class="time-col"><span class="time-label">8 AM</span></div>
+        <div class="dot-col"><div class="dot cafe"></div><div class="line"></div></div>
+        <div class="content-col"><div class="event-card"><div class="event-name">Coffee: Patricia Coffee Brewers <span class="crowd-pill crowd-low">🟢 Quiet</span></div><div class="event-sub">Rear of 493 Little Bourke St · Opens 7 AM Thu. Melbourne's most iconic coffee. Rated 4.8★</div><span class="tag cafe">coffee</span></div></div>
+      </div>
+      <div class="event">
+        <div class="time-col"><span class="time-label">9–11 AM</span></div>
+        <div class="dot-col"><div class="dot see"></div><div class="line"></div></div>
+        <div class="content-col"><div class="event-card"><div class="event-name">Southbank &amp; NGV <span class="crowd-pill crowd-low">🟢 Quiet</span></div><div class="event-sub">Yarra River promenade walk, free NGV permanent collection, browse Southgate. Thursday morning is one of the quietest times to visit.</div><span class="tag see">explore</span><div class="tip-box">💡 The NGV permanent collection is free — a great relaxed start to the day before the CBD afternoon.</div></div></div>
+      </div>
+      <div class="event">
+        <div class="time-col"><span class="time-label">11:30 AM–1 PM</span></div>
+        <div class="dot-col"><div class="dot food"></div><div class="line"></div></div>
+        <div class="content-col"><div class="event-card"><div class="event-name">Lunch in the CBD <span class="crowd-pill crowd-low">🟢 Quiet</span></div><div class="event-sub">Thursday lunch is calm — Hardware Lane or Melbourne Central food hall.</div><span class="tag food">lunch</span></div></div>
+      </div>
+      <div class="event">
+        <div class="time-col"><span class="time-label">2–5 PM</span></div>
+        <div class="dot-col"><div class="dot shop"></div><div class="line"></div></div>
+        <div class="content-col"><div class="event-card"><div class="event-name">MUJI Emporium + Emporium Melbourne <span class="crowd-pill crowd-low">🟢 Quiet</span></div><div class="event-sub">MUJI open until 9 PM Thu — the best night to visit with no rush. Thursday afternoons are the quietest shopping time in the CBD.</div><span class="tag shop">shopping</span></div></div>
+      </div>
+      <div class="event">
+        <div class="time-col"><span class="time-label">5–7 PM</span></div>
+        <div class="dot-col"><div class="dot see"></div><div class="line"></div></div>
+        <div class="content-col"><div class="event-card"><div class="event-name">CBD laneways stroll <span class="crowd-pill crowd-mid">🟡 Moderate</span></div><div class="event-sub">Hosier Lane, Centre Place, AC/DC Lane — all walkable from Emporium.</div><span class="tag see">explore</span></div></div>
+      </div>
+      <div class="event">
+        <div class="time-col"><span class="time-label">7 PM</span></div>
+        <div class="dot-col"><div class="dot food"></div></div>
+        <div class="content-col"><div class="event-card"><div class="event-name">Dinner: Izakaya Domo <span class="crowd-pill crowd-mid">🟡 Moderate</span></div><div class="event-sub">GPO Postal Lane, 350 Bourke St · Book ahead. Rated 4.8★</div><span class="tag food">dinner</span><div class="tip-box">💡 Try the spicy chicken donburi and chilli tofu</div></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DAY 3 -->
+  <div class="day-panel" id="d2">
+    <div class="day-header">
+      <h2>Fri 29 May — Melbourne City Discovery Tour + SEA LIFE + Gimlet <span class="changed-badge">updated</span></h2>
+      <p>An all-CBD day — explore Melbourne by bus, dive into the aquarium, celebrate with fine dining</p>
+    </div>
+    <div class="weather-bar"><span class="weather-icon">🌦</span><span class="weather-temps">11–16°C</span><span class="weather-desc">Mostly OK, light showers possible</span><span class="weather-rain rain-light">~1–3mm</span></div>
+    <div class="timeline">
+      <div class="event">
+        <div class="time-col"><span class="time-label">8 AM</span></div>
+        <div class="dot-col"><div class="dot cafe"></div><div class="line"></div></div>
+        <div class="content-col"><div class="event-card"><div class="event-name">Coffee: Overlay Coffee <span class="crowd-pill crowd-low">🟢 Quiet</span></div><div class="event-sub">320 Little Lonsdale St · Opens 7:30 AM Fri. Peanut butter cream latte is a must. Rated 4.5★</div><span class="tag cafe">coffee</span></div></div>
+      </div>
+      <div class="event">
+        <div class="time-col"><span class="time-label">9 AM–12:30 PM</span></div>
+        <div class="dot-col"><div class="dot tour"></div><div class="line"></div></div>
+        <div class="content-col"><div class="event-card">
+          <div class="event-name">Melbourne City Discovery Tour <span class="crowd-pill crowd-low">🟢 Quiet</span> <span class="price-badge">$110.21 AUD pp</span></div>
+          <div class="event-sub">Meet outside the Melbourne Immigration Museum, corner of Flinders St &amp; Market St · Small group bus tour (~3.5 hrs). Covers Collins St, Hosier Lane, Flinders St Station, Federation Square, MCG, Shrine of Remembrance, Royal Botanic Gardens, St Kilda, Albert Park, Fitzroy Gardens, Lygon St &amp; more. Rated 4.8★</div>
+          <span class="tag tour">guided bus tour</span>
+          <div class="tip-box">💡 Air-conditioned bus — light rain today is no issue. Book via <a href="https://www.viator.com/en-NZ/tours/Melbourne/Melbourne-City-Discovery-Tour/d384-3181P15" target="_blank">Viator · d384-3181P15</a></div>
+        </div></div>
+      </div>
+      <div class="event">
+        <div class="time-col"><span class="time-label">12:30 PM</span></div>
+        <div class="dot-col"><div class="dot food"></div><div class="line"></div></div>
+        <div class="content-col"><div class="event-card"><div class="event-name">Lunch <span class="crowd-pill crowd-mid">🟡 Moderate</span></div><div class="event-sub">Grab something light in the CBD — Hardware Lane or Melbourne Central food hall are both close.</div><span class="tag food">lunch</span></div></div>
+      </div>
+      <div class="event">
+        <div class="time-col"><span class="time-label">2–5 PM</span></div>
+        <div class="dot-col"><div class="dot aqua"></div><div class="line"></div></div>
+        <div class="content-col"><div class="event-card"><div class="event-name">SEA LIFE Melbourne Aquarium <span class="crowd-pill crowd-low">🟢 Quiet</span></div><div class="event-sub">King St, CBD · Open until 5 PM. Seahorses, sea dragons, sharks, rays, penguins, interactive rockpool and glass-bottom boat. Rated 4.2★</div><span class="tag aqua">aquarium</span><div class="tip-box">💡 Book online in advance for a small discount off the door price.</div></div></div>
+      </div>
+      <div class="event">
+        <div class="time-col"><span class="time-label">Evening</span></div>
+        <div class="dot-col"><div class="dot food"></div></div>
+        <div class="content-col"><div class="event-card"><div class="event-name">Free evening — explore at your leisure</div><div class="event-sub">Hardware Lane, Lygon St, Southbank or a quiet dinner of your choice after a full day.</div><span class="tag food">dinner</span></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DAY 4 — UPDATED -->
+  <div class="day-panel" id="d3">
+    <div class="day-header">
+      <h2>Sat 30 May — Fitzroy Thrifting + St Kilda <span class="changed-badge">updated</span></h2>
+      <p>Relaxed thrifting morning, optional St Kilda evening</p>
+    </div>
+    <div class="weather-bar"><span class="weather-icon">🌧</span><span class="weather-temps">12–15°C</span><span class="weather-desc">Wettest day of the trip — pack an umbrella</span><span class="weather-rain rain-mod">~4mm</span></div>
+    <div class="timeline">
+      <div class="event">
+        <div class="time-col"><span class="time-label">9:30 AM</span></div>
+        <div class="dot-col"><div class="dot cafe"></div><div class="line"></div></div>
+        <div class="content-col"><div class="event-card"><div class="event-name">Coffee: Foster &amp; Black <span class="crowd-pill crowd-mid">🟡 Moderate</span></div><div class="event-sub">L1, Melbourne Central · Opens 7:30 AM Sat. Best Saturday coffee stop. Rated 4.8★</div><span class="tag cafe">coffee</span></div></div>
+      </div>
+      <div class="event">
+        <div class="time-col"><span class="time-label">10 AM–1 PM</span></div>
+        <div class="dot-col"><div class="dot shop"></div><div class="line"></div></div>
+        <div class="content-col"><div class="event-card"><div class="event-name">Thrifting: Brunswick St, Fitzroy <span class="crowd-pill crowd-mid">🟡 Moderate</span></div><div class="event-sub">Tram 86 from CBD. Vintage Sole (258, opens 11 AM ✅) and Lost &amp; Found Market (288, opens 11 AM ✅) are both open Saturdays. Grab a light lunch at a Brunswick St cafe.</div><span class="tag shop">thrifting</span><div class="alert-box">⚠️ Hunter Gatherer (274) is closed Saturdays — open Mon–Fri from 9:30 AM if it's a must-visit.</div></div></div>
+      </div>
+      <div class="event">
+        <div class="time-col"><span class="time-label">6–7:30 PM</span></div>
+        <div class="dot-col"><div class="dot see"></div></div>
+        <div class="content-col"><div class="event-card"><div class="event-name">St Kilda foreshore + wild penguins <span class="crowd-pill crowd-mid">🟡 Moderate</span> <span style="display:inline-block;font-size:10px;padding:2px 7px;border-radius:8px;background:#1e1e1a;color:#b0aea8;margin-left:6px;vertical-align:middle;font-weight:500;">optional</span></div><div class="event-sub">Tram 96 to St Kilda. Stroll the pier, Acland St cake shops, Luna Park. Wild penguins return to the breakwater rocks around sunset (~5:30 PM) — free, no booking needed. Skip this if you're tired after a full day!</div><span class="tag see">explore</span><div class="alert-box">⚠️ Wettest day of the trip — bring a waterproof layer if you decide to go. The penguin walk is outdoors on the pier.</div></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DAY 5 -->
+  <div class="day-panel" id="d4">
+    <div class="day-header">
+      <h2>Sun 31 May — State Library Tour + Makers Market + Melbourne Zoo <span class="changed-badge">updated</span></h2>
+      <p>Early library tour, Docklands market, then the zoo in the afternoon</p>
+    </div>
+    <div class="weather-bar"><span class="weather-icon">🌦</span><span class="weather-temps">12–14°C</span><span class="weather-desc">Light showers possible</span><span class="weather-rain rain-light">~1–2mm</span></div>
+    <div class="timeline">
+      <div class="event">
+        <div class="time-col"><span class="time-label">9:15 AM</span></div>
+        <div class="dot-col"><div class="dot tour"></div><div class="line"></div></div>
+        <div class="content-col"><div class="event-card"><div class="event-name">State Library Victoria — Unlocked Guided Tour <span class="crowd-pill crowd-low">🟢 Quiet</span> <span class="new-badge">new</span></div><div class="event-sub">328 Swanston St · Early access before the library opens. La Trobe Reading Room Dome, hidden catacombs, card catalogue archive, Ned Kelly story. ~1 hour. Rated 4.8★</div><span class="tag tour">guided tour</span><div class="alert-box">⚠️ Starts at 9:15 AM sharp — advance booking essential at slv.vic.gov.au</div><div class="tip-box">💡 Entirely indoors — light rain is no issue at all.</div></div></div>
+      </div>
+      <div class="event">
+        <div class="time-col"><span class="time-label">10:30 AM–12:30 PM</span></div>
+        <div class="dot-col"><div class="dot market"></div><div class="line"></div></div>
+        <div class="content-col"><div class="event-card"><div class="event-name">Makers Market, Docklands <span class="crowd-pill crowd-mid">🟡 Moderate</span></div><div class="event-sub">NewQuay Promenade, Docklands · ~15 min walk or short tram from the library. Sunday market featuring local artisans, handmade goods, jewellery, art, food stalls and live music along the waterfront.</div><span class="tag market">market</span><div class="tip-box">💡 Head straight here from the library while it's still quiet. The waterfront setting is lovely — grab breakfast from the food stalls.</div></div></div>
+      </div>
+      <div class="event">
+        <div class="time-col"><span class="time-label">12:30 PM</span></div>
+        <div class="dot-col"><div class="dot cafe"></div><div class="line"></div></div>
+        <div class="content-col"><div class="event-card"><div class="event-name">Coffee: Little Rogue <span class="crowd-pill crowd-mid">🟡 Moderate</span></div><div class="event-sub">12 Drewery Lane · A short walk back into the CBD. Famous matcha latte in a charming laneway. Rated 4.6★</div><span class="tag cafe">coffee</span></div></div>
+      </div>
+      <div class="event">
+        <div class="time-col"><span class="time-label">1:30–4:30 PM</span></div>
+        <div class="dot-col"><div class="dot aqua"></div><div class="line"></div></div>
+        <div class="content-col"><div class="event-card"><div class="event-name">Melbourne Zoo <span class="crowd-pill crowd-mid">🟡 Moderate</span></div><div class="event-sub">Elliott Ave, Parkville · Tram 58 from the city (~20 min). Opens 9 AM, closes 5 PM. Sunday afternoons are busier than weekdays but still very manageable. Rated 4.3★</div><span class="tag aqua">zoo</span><div class="tip-box">💡 Head straight to Gorillas and Tigers first. The reptile house and aquatic section are perfect for the second half. Allow at least 2.5 hrs.</div></div></div>
+      </div>
+      <div class="event">
+        <div class="time-col"><span class="time-label">7 PM</span></div>
+        <div class="dot-col"><div class="dot food"></div></div>
+        <div class="content-col"><div class="event-card"><div class="event-name">Fine dining: Farmer's Daughters <span class="crowd-pill crowd-mid">🟡 Moderate</span></div><div class="event-sub">95 Exhibition St · Gippsland farm-to-table set menu with matched wines. Rated 4.5★ — book ahead.</div><span class="tag food">fine dining</span></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DAY 6 — UPDATED -->
+  <div class="day-panel" id="d5">
+    <div class="day-header">
+      <h2>Mon 1 Jun — Melbourne Museum + LEGOLAND + Chadstone + Gimlet <span class="changed-badge">updated</span></h2>
+      <p>Museum morning, LEGOLAND &amp; shopping afternoon, fine dining to finish</p>
+    </div>
+    <div class="weather-bar"><span class="weather-icon">☀️</span><span class="weather-temps">11–16°C</span><span class="weather-desc">Dry — great day to be out &amp; about</span><span class="weather-rain rain-dry">No rain</span></div>
+    <div class="timeline">
+      <div class="event">
+        <div class="time-col"><span class="time-label">9 AM</span></div>
+        <div class="dot-col"><div class="dot cafe"></div><div class="line"></div></div>
+        <div class="content-col"><div class="event-card"><div class="event-name">Coffee: Patricia Coffee Brewers <span class="crowd-pill crowd-low">🟢 Quiet</span></div><div class="event-sub">Rear of 493 Little Bourke St · Opens 7 AM Mon. Rated 4.8★</div><span class="tag cafe">coffee</span></div></div>
+      </div>
+      <div class="event">
+        <div class="time-col"><span class="time-label">9:30 AM–12:30 PM</span></div>
+        <div class="dot-col"><div class="dot see"></div><div class="line"></div></div>
+        <div class="content-col"><div class="event-card"><div class="event-name">Melbourne Museum <span class="crowd-pill crowd-low">🟢 Quiet</span></div><div class="event-sub">11 Nicholson St, Carlton · Short tram from CBD. Opens 9 AM. Monday is one of the quietest days — no school groups, no weekend crowds. Rated 4.6★</div><span class="tag see">museum</span><div class="tip-box">💡 Monday morning is the best time to visit — almost empty. Dinosaur hall and forest gallery are the highlights — allow 2.5–3 hrs.</div></div></div>
+      </div>
+      <div class="event">
+        <div class="time-col"><span class="time-label">1:30–3:30 PM</span></div>
+        <div class="dot-col"><div class="dot tour"></div><div class="line"></div></div>
+        <div class="content-col"><div class="event-card"><div class="event-name">LEGOLAND Discovery Centre <span class="crowd-pill crowd-low">🟢 Quiet</span></div><div class="event-sub">Level 2, Chadstone · Uber from Carlton (~25 min). Opens 10 AM Mon. Monday is one of LEGOLAND's quietest days — short queues, easy workshop access.</div><span class="tag tour">activity</span><div class="tip-box">💡 Far more relaxed than a weekend visit — you'll have breathing room in the workshop areas.</div></div></div>
+      </div>
+      <div class="event">
+        <div class="time-col"><span class="time-label">3:30–5:30 PM</span></div>
+        <div class="dot-col"><div class="dot shop"></div><div class="line"></div></div>
+        <div class="content-col"><div class="event-card"><div class="event-name">Chadstone shopping <span class="crowd-pill crowd-low">🟢 Quiet</span></div><div class="event-sub">Monday is one of Chadstone's quietest days. Open until 9 PM Mon — plenty of time before dinner.</div><span class="tag shop">shopping</span></div></div>
+      </div>
+      <div class="event">
+        <div class="time-col"><span class="time-label">8:45 PM</span></div>
+        <div class="dot-col"><div class="dot food"></div></div>
+        <div class="content-col"><div class="event-card"><div class="event-name">Fine dining: Gimlet <span class="crowd-pill crowd-low">🟢 Quiet</span></div><div class="event-sub">33 Russell St · Monday is much quieter than the weekend — a far more relaxed Gimlet experience. Lobster saffron rice is legendary. Rated 4.6★</div><span class="tag food">fine dining</span><div class="alert-box">⚠️ Book ahead — one of Melbourne's hardest tables to get even on weeknights</div></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DAY 7 -->
+  <div class="day-panel" id="d6">
+    <div class="day-header"><h2>Tue 2 Jun — Last Morning + Depart 6:55 PM</h2><p>A full, relaxed last day — leave for the airport by 3:30 PM</p></div>
+    <div class="weather-bar"><span class="weather-icon">☀️</span><span class="weather-temps">13–16°C</span><span class="weather-desc">Dry &amp; clear — perfect send-off</span><span class="weather-rain rain-dry">No rain</span></div>
+    <div class="timeline">
+      <div class="event">
+        <div class="time-col"><span class="time-label">8 AM</span></div>
+        <div class="dot-col"><div class="dot cafe"></div><div class="line"></div></div>
+        <div class="content-col"><div class="event-card"><div class="event-name">Final coffee: Patricia Coffee Brewers <span class="crowd-pill crowd-low">🟢 Quiet</span></div><div class="event-sub">Rear of 493 Little Bourke St · Opens 7 AM Tue. Rated 4.8★</div><span class="tag cafe">coffee</span></div></div>
+      </div>
+      <div class="event">
+        <div class="time-col"><span class="time-label">9–11 AM</span></div>
+        <div class="dot-col"><div class="dot see"></div><div class="line"></div></div>
+        <div class="content-col"><div class="event-card"><div class="event-name">Federation Square &amp; Yarra morning walk <span class="crowd-pill crowd-low">🟢 Quiet</span></div><div class="event-sub">Flinders St Station, Birrarung Marr parklands, Federation Square. Beautiful dry morning for a farewell stroll.</div><span class="tag see">explore</span></div></div>
+      </div>
+      <div class="event">
+        <div class="time-col"><span class="time-label">11 AM–1 PM</span></div>
+        <div class="dot-col"><div class="dot shop"></div><div class="line"></div></div>
+        <div class="content-col"><div class="event-card"><div class="event-name">Last-minute shopping <span class="crowd-pill crowd-low">🟢 Quiet</span></div><div class="event-sub">Royal Arcade &amp; Block Arcade, Melbourne Central, or back to Emporium.</div><span class="tag shop">shopping</span></div></div>
+      </div>
+      <div class="event">
+        <div class="time-col"><span class="time-label">1 PM</span></div>
+        <div class="dot-col"><div class="dot food"></div><div class="line"></div></div>
+        <div class="content-col"><div class="event-card"><div class="event-name">Farewell lunch: Izakaya Domo or NOMAD <span class="crowd-pill crowd-low">🟢 Quiet</span></div><div class="event-sub">Both open Tue lunch — a relaxed send-off meal.</div><span class="tag food">lunch</span></div></div>
+      </div>
+      <div class="event">
+        <div class="time-col"><span class="time-label">3:30 PM</span></div>
+        <div class="dot-col"><div class="dot flight"></div><div class="line"></div></div>
+        <div class="content-col"><div class="event-card"><div class="event-name">Head to Melbourne Airport</div><div class="event-sub">SkyBus from Southern Cross Station (~30 min) or Uber (~35–45 min).</div><span class="tag flight">departure</span><div class="alert-box">⚠️ For a 6:55 PM flight, aim to be at the airport by 4:30–5 PM. Check your airline's check-in cut-off.</div></div></div>
+      </div>
+      <div class="event">
+        <div class="time-col"><span class="time-label">6:55 PM</span></div>
+        <div class="dot-col"><div class="dot flight"></div></div>
+        <div class="content-col"><div class="event-card"><div class="event-name">Depart Melbourne — safe travels! ✈️</div><div class="event-sub">Flight departs Tullamarine back to Auckland. Hope it's an incredible trip!</div><span class="tag flight">departure</span></div></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function show(i) {
+      document.querySelectorAll('.day-panel').forEach((p,idx) => p.classList.toggle('active', idx===i));
+      document.querySelectorAll('.tab').forEach((t,idx) => t.classList.toggle('active', idx===i));
+    }
+  </script>
+</body>
+</html>
